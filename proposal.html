@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Envelope with Notes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            font-family: Arial, sans-serif;
+        }
+
+        .envelope {
+            width: 300px;
+            height: 200px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .envelope__front {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background-color: #ba9872;
+            border: 7px solid #967b5c;
+            border-radius: 10px;
+            clip-path: polygon(100% 0, 50% 70%, 0% 0, 0% 100%, 100% 100%);
+            z-index: 3;
+        }
+
+        .envelope__back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background-color: #967b5c;
+            border-radius: 10px;
+            clip-path: polygon(0% 0, 100% 0, 90% 100%, 0% 90%);
+            z-index: 1;
+        }
+
+        .envelope__flap {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background-color: #967b5c;
+            border-radius: 10px;
+            clip-path: polygon(0% 0, 100% 0, 50% 81%);
+            z-index: 2;
+            transition: transform 0.5s ease-in-out;
+            transform-origin: top;
+        }
+
+        .envelope.open .envelope__flap {
+            transform: rotateX(180deg);
+        }
+
+        .sticker {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #f9f9f9;
+            border: 5px solid #e2e2e2;
+            border-radius: 50%;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            transition: opacity 0.3s ease;
+        }
+
+        .envelope.open .sticker {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .notes-container {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            display: none;
+        }
+
+        .envelope.open .notes-container {
+            display: block;
+        }
+
+        .note {
+            position: absolute;
+            width: 90%;
+            left: 5%;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px 0px rgba(0,0,0,0.1);
+            transition: transform 0.5s ease;
+            cursor: pointer;
+            transform: translateY(100px);
+            min-height: 80px;
+        }
+
+        /* Initial positions */
+        .note:nth-child(1) { top: -10px; }
+        .note:nth-child(2) { top: 20px; }
+        .note:nth-child(3) { top: 40px; }
+
+        /* Note that's currently out */
+        .note.active {
+            transform: translateY(-100px);
+            z-index: 5;
+        }
+
+        /* Notes waiting to be clicked (partially visible) */
+        .note.peek {
+            transform: translateY(50px);
+            z-index: 2;
+            transition: transform 0.5s ease, box-shadow 0.3s ease;
+        }
+
+        .note.peek:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateY(45px);
+        }
+
+        .note p {
+            margin: 0;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        /* Add visible click area for peeking notes */
+        .note.peek::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="envelope">
+        <div class="envelope__front"></div>
+        <div class="envelope__back"></div>
+        <div class="envelope__flap"></div>
+        <div class="sticker">❤️</div>
+        <div class="notes-container">
+            <div class="note" data-index="0">
+                <p>You inspire me to be a better person every day, and I never want to let you down because you mean everything to me.</p>
+            </div>
+            <div class="note" data-index="1">
+                <p>You’re the one who makes my world brighter, and I’d do anything to bring back your smile because it means everything to me.</p>
+            </div>
+            <div class="note" data-index="2">
+                <p>I’m truly sorry for my mistake—please give me a chance to make it up to you and prove how much you mean to me.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const envelope = document.querySelector('.envelope');
+        const notes = document.querySelectorAll('.note');
+        let currentNoteIndex = -1;
+
+        envelope.addEventListener('click', function(e) {
+            if (!envelope.classList.contains('open')) {
+                envelope.classList.add('open');
+                setTimeout(showFirstNote, 500);
+            }
+        });
+
+        function showFirstNote() {
+            activateNote(0);
+        }
+
+        function activateNote(index) {
+            // Remove active and peek classes from all notes
+            notes.forEach(note => {
+                note.classList.remove('active');
+                note.classList.remove('peek');
+            });
+
+            // Make clicked note active
+            notes[index].classList.add('active');
+            currentNoteIndex = index;
+
+            // Make other notes peek
+            notes.forEach((note, i) => {
+                if (i !== index) {
+                    note.classList.add('peek');
+                }
+            });
+        }
+
+        // Add click handlers to all notes
+        notes.forEach(note => {
+            note.addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                if (index !== currentNoteIndex) {
+                    activateNote(index);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
